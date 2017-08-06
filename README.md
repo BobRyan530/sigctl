@@ -38,3 +38,8 @@ Display all points in memory for channels 1 and 2
 ```
 ./sigview.py -i 192.168.1.88 -c ch2,CH1 --wtype 1
 ```
+
+Dump all channels in csv format to /tmp/wf.csv
+```
+./sigdump.py -i 192.168.1.88 -f /tmp/wf.csv
+```
