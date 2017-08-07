@@ -95,8 +95,9 @@ if __name__ == "__main__":
         voffset.append(sigctl.getOffset(instr, channels[i]))
     tstart = sigctl.getStartTime(instr)
     tint = sigctl.getTimeInterval(instr)
+    srate = 1 / tint
 
     if debug:
-        print('vdiv: {}V\nvoffset: {}V\ntstart: {}s\ntint: {:f}s\n'.format(vdiv, voffset, tstart, tint))
+        print('vdiv: {}V\nvoffset: {}V\ntstart: {}s\ntint: {:f}s\nsrate: {}Sa/s\n'.format(vdiv, voffset, tstart, tint))
 
     writeCSV(channels, args.filename)
