@@ -43,3 +43,8 @@ Dump all channels in csv format to /tmp/wf.csv
 ```
 ./sigdump.py -i 192.168.1.88 -f /tmp/wf.csv
 ```
+
+Dump all channels in csv format which can be imported by sigrok. Vih = +2.1v
+```
+./sigdump.py -i 192.168.1.88 -f /tmp/wf.csv --sigrok --vih 2.1
+```

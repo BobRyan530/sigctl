@@ -13,7 +13,7 @@ import matplotlib.animation as animation
 skipbytes = 20  # Some noise in the first ~20 bytes screws up the scaling
 
 def convertLogic(voltage):
-    if voltage > args.vih:
+    if voltage > float(args.vih):
         return(1)
     else:
         return(0)
