@@ -12,6 +12,12 @@ import matplotlib.animation as animation
 
 skipbytes = 20  # Some noise in the first ~20 bytes screws up the scaling
 
+def convertLogic(voltage):
+    if voltage > args.vih:
+        return(1)
+    else:
+        return(0)
+
 def writeCSV(channels, filename):
     wf = sigctl.recvWaveform(instr, channels)
     raw = StringIO()
@@ -20,11 +26,17 @@ def writeCSV(channels, filename):
         data.append(wf[i][346+skipbytes:-2])
     with open(filename, 'wb') as f:
         builder = csv.writer(f, delimiter=',')
-        builder.writerow(['timestamp'] + [x for x in channels])
+        if args.sigrok:
+            builder.writerow(['timestamp'] + [x for x in channels])
+        else:
+            builder.writerow(['timestamp'] + [x for x in channels])
         idx = 0
         for i in range(0, len(data[0])):
             ts = tstart + (tint * idx)
-            builder.writerow([float(ts)] + [float(sigctl.convertOutput(ord(data[x][i]), x, vdiv, voffset, convcb)) for x in range(0, len(channels))])
+            if args.sigrok:
+                builder.writerow([convertLogic(float(sigctl.convertOutput(ord(data[x][i]), x, vdiv, voffset, sigctl.convertVoltage))) for x in range(0, len(channels))])
+            else:
+                builder.writerow([float(ts)] + [float(sigctl.convertOutput(ord(data[x][i]), x, vdiv, voffset, convcb)) for x in range(0, len(channels))])
             idx += 1
   
 parser = argparse.ArgumentParser()
@@ -37,6 +49,8 @@ parser.add_argument("--fp", default=0, help="waveform setup: first point")
 parser.add_argument("--sp", default=0, help="waveform setup: sparsing")
 parser.add_argument("--np", default=0, help="waveform setup: number of points")
 parser.add_argument("--wtype", default=0, choices=['0', '1'], help="waveform setup: type: 0 = points on screen, 1 = all points in memory")
+parser.add_argument("--sigrok", default=False, action='store_true', help="output csv in a format usable by sigrok")
+parser.add_argument("--vih", default=2.00, help="voltage level above which is considered logic high")
 args = parser.parse_args()
 
 channels = []
