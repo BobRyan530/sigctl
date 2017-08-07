@@ -25,9 +25,10 @@ def writeCSV(channels, filename):
     for i in range(0, len(channels)):
         data.append(wf[i][346+skipbytes:-2])
     with open(filename, 'wb') as f:
+        f.write(';samplerate={}\n'.format(srate))
         builder = csv.writer(f, delimiter=',')
         if args.sigrok:
-            builder.writerow(['timestamp'] + [x for x in channels])
+            builder.writerow([x for x in channels])
         else:
             builder.writerow(['timestamp'] + [x for x in channels])
         idx = 0
@@ -98,6 +99,6 @@ if __name__ == "__main__":
     srate = 1 / tint
 
     if debug:
-        print('vdiv: {}V\nvoffset: {}V\ntstart: {}s\ntint: {:f}s\nsrate: {}Sa/s\n'.format(vdiv, voffset, tstart, tint))
+        print('vdiv: {}V\nvoffset: {}V\ntstart: {}s\ntint: {:f}s\nsrate: {}Sa/s\n'.format(vdiv, voffset, tstart, tint, srate))
 
     writeCSV(channels, args.filename)
