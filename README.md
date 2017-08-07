@@ -48,3 +48,9 @@ Dump all channels in csv format which can be imported by sigrok. Vih = +2.1v
 ```
 ./sigdump.py -i 192.168.1.88 -f /tmp/wf.csv --sigrok --vih 2.1
 ```
+
+The above file can be imported into pulseview but will not have timestamps. It can be converted with
+```
+sigrok-cli -I csv:header=true:samplerate=`grep samplerate /tmp/wf.csv|cut -d= -f2` -i /tmp/wf.csv -o /tmp/wf.sr
+```
+and the .sr file can be opened by pulseview
