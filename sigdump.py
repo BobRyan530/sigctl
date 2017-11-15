@@ -42,7 +42,7 @@ def writeCSV(channels, filename):
   
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--ip", required=True, help="ip for vxi11 interface to instrument")
-parser.add_argument("-f", "--filename", required=True, help="ip for vxi11 interface to instrument")
+parser.add_argument("-f", "--filename", required=True, help="filename to dump output to")
 parser.add_argument("-c", "--channels", default='all', help="comma separated list of channels to poll")
 parser.add_argument("-d", "--debug", default=False, action='store_true', help="increase output verbosity")
 parser.add_argument("-n", "--noconversion", default=False, action='store_true', help="don't scale values to volts. display as currently on oscilloscope")
