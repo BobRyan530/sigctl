@@ -59,6 +59,9 @@ def getTimeInterval(instr):
     elif 'KSa' in srate:
         srate = srate.split('KSa')[0]
         srate = float(srate) * 10**3
+    elif 'Sa' in srate:
+        srate = srate.split('Sa')[0]
+        srate = float(srate)
     tint = 1 / srate
     return(float(tint))
   
