@@ -33,7 +33,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -i IP, --ip IP        ip for vxi11 interface to instrument
   -f FILENAME, --filename FILENAME
-                        ip for vxi11 interface to instrument
+                        filename to dump output to
   -c CHANNELS, --channels CHANNELS
                         comma separated list of channels to poll
   -d, --debug           increase output verbosity
