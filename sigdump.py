@@ -1,104 +1,63 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sigctl
 import argparse
 import csv
-import time
-import pandas
+import sys
+
 import vxi11
-from cStringIO import StringIO
-from matplotlib import pyplot as plt
-import matplotlib.animation as animation
 
-skipbytes = 20  # Some noise in the first ~20 bytes screws up the scaling
+import sigctl
 
-def convertLogic(voltage):
-    if voltage > float(args.vih):
-        return(1)
-    else:
-        return(0)
 
-def writeCSV(channels, filename):
-    wf = sigctl.recvWaveform(instr, channels)
-    raw = StringIO()
-    data = []
-    for i in range(0, len(channels)):
-        data.append(wf[i][346+skipbytes:-2])
-    with open(filename, 'wb') as f:
-        f.write(';samplerate={}\n'.format(srate))
+def convertLogic(voltage, vih):
+    return 1 if voltage > vih else 0
+
+
+def formatRate(srate):
+    """sigrok wants a plain number; avoid '1000000.0'."""
+    return str(int(round(srate))) if abs(srate - round(srate)) < 1e-6 else repr(srate)
+
+
+def writeCSV(instr, scope, args):
+    n, data = scope.fetch(instr)
+    channels = scope.channels
+    convcb = sigctl.convertNone if args.noconversion else sigctl.convertVoltage
+    with open(args.filename, 'w', newline='') as f:
+        f.write(';samplerate={}\n'.format(formatRate(scope.srate)))
         builder = csv.writer(f, delimiter=',')
         if args.sigrok:
-            builder.writerow([x for x in channels])
+            builder.writerow(channels)
         else:
-            builder.writerow(['timestamp'] + [x for x in channels])
-        idx = 0
-        for i in range(0, len(data[0])):
-            ts = tstart + (tint * idx)
+            builder.writerow(['timestamp'] + channels)
+        for i in range(n):
             if args.sigrok:
-                builder.writerow([convertLogic(float(sigctl.convertOutput(ord(data[x][i]), x, vdiv, voffset, sigctl.convertVoltage))) for x in range(0, len(channels))])
+                builder.writerow([convertLogic(sigctl.convertVoltage(data[x][i], x, scope.vdiv, scope.voffset), args.vih)
+                                  for x in range(len(channels))])
             else:
-                builder.writerow([float(ts)] + [float(sigctl.convertOutput(ord(data[x][i]), x, vdiv, voffset, convcb)) for x in range(0, len(channels))])
-            idx += 1
-  
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--ip", required=True, help="ip for vxi11 interface to instrument")
-parser.add_argument("-f", "--filename", required=True, help="filename to dump output to")
-parser.add_argument("-c", "--channels", default='all', help="comma separated list of channels to poll")
-parser.add_argument("-d", "--debug", default=False, action='store_true', help="increase output verbosity")
-parser.add_argument("-n", "--noconversion", default=False, action='store_true', help="don't scale values to volts. display as currently on oscilloscope")
-parser.add_argument("--fp", default=0, help="waveform setup: first point")
-parser.add_argument("--sp", default=0, help="waveform setup: sparsing")
-parser.add_argument("--np", default=0, help="waveform setup: number of points")
-parser.add_argument("--wtype", default=0, choices=['0', '1'], help="waveform setup: type: 0 = points on screen, 1 = all points in memory")
-parser.add_argument("--sigrok", default=False, action='store_true', help="output csv in a format usable by sigrok")
-parser.add_argument("--vih", default=2.00, help="voltage level above which is considered logic high")
-args = parser.parse_args()
+                ts = scope.tstart + scope.tint * i
+                builder.writerow([ts] + [sigctl.convertOutput(data[x][i], x, scope.vdiv, scope.voffset, convcb)
+                                         for x in range(len(channels))])
+    return n
 
-channels = []
 
-if 'all' in args.channels:
-    channels = ['C1', 'C2', 'C3', 'C4']
-else:
-    if '1' in args.channels:
-        channels.append('C1')
-    if '2' in args.channels:
-        channels.append('C2')
-    if '3' in args.channels:
-        channels.append('C3')
-    if '4' in args.channels:
-        channels.append('C4')
+def main():
+    parser = argparse.ArgumentParser()
+    sigctl.addCommonArgs(parser)
+    parser.add_argument("-f", "--filename", required=True, help="filename to dump output to")
+    parser.add_argument("--sigrok", default=False, action='store_true', help="output csv in a format usable by sigrok")
+    parser.add_argument("--vih", default=2.00, type=float, help="voltage level above which is considered logic high")
+    args = parser.parse_args()
+    sigctl.debug = args.debug
 
-if args.noconversion:
-    convcb = sigctl.convertNone
-else:
-    convcb = sigctl.convertVoltage
+    try:
+        instr = vxi11.Instrument(args.ip)
+        scope = sigctl.ScopeSetup(instr, args)
+        n = writeCSV(instr, scope, args)
+    except (OSError, vxi11.vxi11.Vxi11Exception, ValueError) as e:
+        sys.exit('error talking to {}: {}'.format(args.ip, e))
+    if args.debug:
+        print('wrote {} samples x {} channels to {}'.format(n, len(scope.channels), args.filename))
 
-if args.debug:
-    debug = True
-else:
-    debug = False
 
 if __name__ == "__main__":
-    instr =  vxi11.Instrument(args.ip)
-
-    instrname = ' '.join(sigctl.getIdn(instr).split()[1].split(',')[0:2])
-    if debug:
-        print('IDN: {}'.format(sigctl.getIdn(instr)))
-        print('Instrument: {}'.format(instrname))
-        print('Channels: {}'.format(channels))
-
-    sigctl.waveformSetup(instr, args)
-
-    vdiv = []
-    voffset = []
-    for i in range(0, len(channels)):
-        vdiv.append(sigctl.getVdiv(instr, channels[i]))
-        voffset.append(sigctl.getOffset(instr, channels[i]))
-    tstart = sigctl.getStartTime(instr)
-    tint = sigctl.getTimeInterval(instr)
-    srate = 1 / tint
-
-    if debug:
-        print('vdiv: {}V\nvoffset: {}V\ntstart: {}s\ntint: {:f}s\nsrate: {}Sa/s\n'.format(vdiv, voffset, tstart, tint, srate))
-
-    writeCSV(channels, args.filename)
+    main()

@@ -3,39 +3,28 @@ Python tools to access Siglent-manufactured oscilloscopes through the VXI11 inte
 
 Tested on a B&K Precision 2557 which I believe is a rebadged Siglent SDS1204cfl.
 
+Requires Python 3 and the packages in `requirements.txt`:
+```
+pip install -r requirements.txt
+```
+On Python 3.13 and newer, `python-vxi11` also needs `standard-xdrlib` (included in
+`requirements.txt`) because `xdrlib` was removed from the standard library.
+
+Channels can be given as `1`, `C1` or `CH1` (any case), comma separated, or `all`.
+With `-n` values are reported in screen divisions (25 ADC codes per division).
+
 Examples:
 ```
 ./sigview.py --help
 usage: sigview.py [-h] -i IP [-c CHANNELS] [-d] [-n] [--fp FP] [--sp SP]
-				  [--np NP] [--wtype {0,1}]
+                  [--np NP] [--wtype {0,1}]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -i IP, --ip IP        ip for vxi11 interface to instrument
-  -c CHANNELS, --channels CHANNELS
-						comma separated list of channels to poll
-  -d, --debug           increase output verbosity
-  -n, --noconversion    don't scale values to volts. display as currently on
-						oscilloscope
-  --fp FP               waveform setup: first point
-  --sp SP               waveform setup: sparsing
-  --np NP               waveform setup: number of points
-  --wtype {0,1}         waveform setup: type: 0 = points on screen, 1 = all
-						points in memory
-```
-
-```
-./sigdump.py --help
-usage: sigdump.py [-h] -i IP -f FILENAME [-c CHANNELS] [-d] [-n] [--fp FP]
-                  [--sp SP] [--np NP] [--wtype {0,1}] [--sigrok] [--vih VIH]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -i IP, --ip IP        ip for vxi11 interface to instrument
-  -f FILENAME, --filename FILENAME
-                        filename to dump output to
-  -c CHANNELS, --channels CHANNELS
-                        comma separated list of channels to poll
+  -i, --ip IP           ip for vxi11 interface to instrument
+  -c, --channels CHANNELS
+                        comma separated list of channels to poll (default:
+                        all)
   -d, --debug           increase output verbosity
   -n, --noconversion    don't scale values to volts. display as currently on
                         oscilloscope
@@ -44,6 +33,17 @@ optional arguments:
   --np NP               waveform setup: number of points
   --wtype {0,1}         waveform setup: type: 0 = points on screen, 1 = all
                         points in memory
+```
+
+```
+./sigdump.py --help
+usage: sigdump.py [-h] -i IP [-c CHANNELS] [-d] [-n] [--fp FP] [--sp SP]
+                  [--np NP] [--wtype {0,1}] -f FILENAME [--sigrok] [--vih VIH]
+
+options:
+  ... same options as sigview.py, plus:
+  -f, --filename FILENAME
+                        filename to dump output to
   --sigrok              output csv in a format usable by sigrok
   --vih VIH             voltage level above which is considered logic high
 ```
@@ -57,7 +57,7 @@ Display channel 3 and don't scale to volts
 ```
 ./sigview.py -i 192.168.1.88 -c ch3 -n
 ```
- 
+
 Display all points in memory for channels 1 and 2
 ```
 ./sigview.py -i 192.168.1.88 -c ch2,CH1 --wtype 1
